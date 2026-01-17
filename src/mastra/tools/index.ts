@@ -35,7 +35,7 @@ export const weatherTool = createTool({
     conditions: z.string(),
     location: z.string(),
   }),
-  execute: async ({ context }) => {
+  execute: async ({ context }: { context: any }) => {
     return await getWeather(context.location);
   },
 });
@@ -100,3 +100,86 @@ function getWeatherCondition(code: number): string {
   };
   return conditions[code] || 'Unknown';
 }
+
+interface SearchResponse {
+  results: {
+    title: string;
+    url: string;
+    content: string;
+  }[];
+}
+
+export const searchTool = createTool({
+  id: 'web-search',
+  description: 'Search the web for information',
+  inputSchema: z.object({
+    query: z.string().describe('Search query'),
+  }),
+  outputSchema: z.object({
+    results: z.array(
+      z.object({
+        title: z.string(),
+        url: z.string(),
+        content: z.string(),
+      })
+    ),
+  }),
+  execute: async ({ context }: { context: any }) => {
+    return await performSearch(context.query);
+  },
+});
+
+const performSearch = async (query: string) => {
+  // This is a placeholder for a real search API. 
+  // In a real app, you would use something like Tavily, Serper, or manual scraping.
+  // For now, we'll try to use a standard value if available, or error out if no key is present.
+
+  const apiKey = process.env.TAVILY_API_KEY;
+
+  if (!apiKey) {
+    console.warn('No TAVILY_API_KEY found, returning mock data.');
+    return {
+      results: [
+        {
+          title: 'Mock Search Result for ' + query,
+          url: 'https://example.com/mock',
+          content: 'This is a mock result because no API key was provided. configuring TAVILY_API_KEY will enable real search.'
+        }
+      ]
+    }
+  }
+
+  try {
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query,
+        search_depth: "basic",
+        include_answer: true,
+        max_results: 5
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Search request failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Transform Tavily response to our schema
+    return {
+      results: data.results.map((r: any) => ({
+        title: r.title,
+        url: r.url,
+        content: r.content
+      }))
+    };
+  } catch (error) {
+    console.error('Search failed:', error);
+    throw error;
+  }
+};

@@ -1,5 +1,5 @@
 import { Agent } from '@mastra/core/agent';
-import { weatherTool } from '../tools';
+import { weatherTool, searchTool } from '../tools';
 
 export const weatherAgent = new Agent({
   name: 'Weather Agent',
@@ -13,8 +13,11 @@ export const weatherAgent = new Agent({
       - Include relevant details like humidity, wind conditions, and precipitation
       - Keep responses concise but informative
 
+      You also have access to a web search tool. Use it when the user asks for information that is not directly related to weather data or when you need to supplement weather information with news or event details.
+
       Use the weatherTool to fetch current weather data.
+      Use the searchTool to search the web.
 `,
   model: process.env.MODEL || 'openai/gpt-4o',
-  tools: { weatherTool },
+  tools: { weatherTool, searchTool },
 });
